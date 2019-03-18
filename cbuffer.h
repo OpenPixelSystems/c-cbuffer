@@ -24,5 +24,5 @@ struct cbuffer {
 
 struct cbuffer *init_cbuffer(int nr_elements);
 int write_cbuffer(struct cbuffer *cbuf, void *data, int *underrun_detect);
-void *read_cbuffer(struct cbuffer *cbuf);
+int read_cbuffer(struct cbuffer *cbuf, void **data);
 void close_cbuffer(struct cbuffer *cbuf);
