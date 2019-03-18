@@ -11,12 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 
 struct cbuffer {
         uint32_t nr_elements;
         void **data;
         uint32_t read_pos;
         uint32_t write_pos;
+
+        pthread_mutex_t lock;
 };
 
 struct cbuffer *init_cbuffer(int nr_elements);
