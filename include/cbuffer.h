@@ -98,6 +98,7 @@ static inline void *cbuffer_get_write_ptr(struct cbuffer_t *cbuf)
 
 int cbuffer_return_read_ptr(struct cbuffer_t *cbuf);
 int cbuffer_return_write_ptr(struct cbuffer_t *cbuf);
+
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf);
 
 #define CBUFFER_ALLOCATOR_HELPER(cbuf, type) \

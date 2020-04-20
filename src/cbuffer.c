@@ -1,13 +1,5 @@
 #include "cbuffer.h"
 
-static inline int _check_for_underrun(struct cbuffer_t *cbuf) {
-	if (cbuf->rp == cbuf->wp) {
-		CBUF_ERR("Underrun detected!!");
-		return -1;
-	}
-	return 1; // You're good!
-}
-
 static inline int _check_for_overrun(struct cbuffer_t *cbuf) {
 	if (cbuf->current_nr_elements == 0) {
 		return 0;
@@ -64,7 +56,9 @@ int cbuffer_return_write_ptr(struct cbuffer_t *cbuf)
 		return -1;
 	}
 
-	_check_for_overrun(cbuf);
+	if (_check_for_overrun(cbuf) < 0) {
+		return -1;
+	}
 
 #ifdef CBUFFER_VALIDATE_USAGE
 	if (cbuf->wp_in_use == false) {
@@ -109,8 +103,6 @@ int cbuffer_return_read_ptr(struct cbuffer_t *cbuf)
 		CBUF_ERR("RP: cbuffer or cbuffer->wp cannot be NULL!");
 		return -1;
 	}
-
-	_check_for_underrun(cbuf);
 
 #ifdef CBUFFER_VALIDATE_USAGE
 	if (cbuf->rp_in_use == false) {
