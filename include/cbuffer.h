@@ -1,10 +1,10 @@
 /**
  * @file cbuffer.h
  * @brief Header file for Circular buffer implementation
- * @author Bram Vlerick
+ * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
+ * @author Laurens Miers <laurens.miers@mind.be>
  * @version v2.0
- * @date 2019-03-18
- * @updated 2020-04-20
+ * @date 2020-04-20
  */
 
 #include <stdint.h>
