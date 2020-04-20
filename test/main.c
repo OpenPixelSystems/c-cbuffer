@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 	}
 	CBUF_INFO("%d insertions took: %.0lfms average over %d runs", NR_INS, avg / NR_RUNS, NR_RUNS);
 
+	avg = 0.0;
 	/* NONE Protected run */
 	for (int runs = 0; runs < NR_RUNS; runs++) {
 		struct time_trace_t *tracer = tracer_setup_time_trace();
