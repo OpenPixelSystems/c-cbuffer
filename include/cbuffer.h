@@ -64,7 +64,7 @@ struct cbuffer_t {
 
 struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements);
 
-static inline void *cbuffer_get_read_ptr(struct cbuffer_t *cbuf, int *error)
+static inline void *cbuffer_get_read_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->rp) {
 		CBUF_ERR("Invalid argument, cbuf || cbuf->rp == NULL");
@@ -87,7 +87,7 @@ static inline void *cbuffer_get_read_ptr(struct cbuffer_t *cbuf, int *error)
 	return *cbuf->rp;
 }
 
-static inline void *cbuffer_get_write_ptr(struct cbuffer_t *cbuf)
+static inline void *cbuffer_get_write_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->wp) {
 		CBUF_ERR("Invalid argument, cbuf || cbuf->wp == NULL");
@@ -105,8 +105,46 @@ static inline void *cbuffer_get_write_ptr(struct cbuffer_t *cbuf)
 	return *cbuf->wp;
 }
 
-int cbuffer_return_read_ptr(struct cbuffer_t *cbuf);
-int cbuffer_return_write_ptr(struct cbuffer_t *cbuf);
+static inline void **cbuffer_get_raw_read_pointer(struct cbuffer_t *cbuf)
+{
+	if (!cbuf || !cbuf->rp) {
+		CBUF_ERR("Invalid argument, cbuf || cbuf->rp == NULL");
+		return NULL;
+	}
+
+	return cbuf->rp;
+}
+
+static inline void **cbuffer_get_raw_write_pointer(struct cbuffer_t *cbuf)
+{
+	if (!cbuf || !cbuf->wp) {
+		CBUF_ERR("Invalid argument, cbuf || cbuf->wp == NULL");
+		return NULL;
+	}
+	return cbuf->wp;
+}
+
+
+int cbuffer_signal_element_read(struct cbuffer_t *cbuf);
+
+int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
+
+static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
+{
+	if (cbuf) {
+		return cbuf->nr_elements;
+	}
+	return -1;
+}
+
+static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
+{
+	if (cbuf) {
+		return cbuf->current_nr_elements;
+	}
+	return -1;
+}
+
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf);
 
 #define CBUFFER_ALLOCATOR_HELPER(cbuf, type) \

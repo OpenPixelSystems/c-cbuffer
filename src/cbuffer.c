@@ -56,53 +56,7 @@ error:
 	return NULL;
 }
 
-int cbuffer_return_write_ptr(struct cbuffer_t *cbuf)
-{
-	int error = 0;
-	if (!cbuf || !cbuf->wp) {
-		CBUF_ERR("WP: cbuffer or cbuffer->wp cannot be NULL!");
-		return -1;
-	}
-
-	_check_for_overrun(cbuf);
-
-#ifdef CBUFFER_VALIDATE_USAGE
-	if (cbuf->wp_in_use == false) {
-		CBUF_ERR("WP: No write pointer taken!");
-		return -1;
-	}
-	cbuf->wp_in_use = false;
-#endif /* CBUFFER_VALIDATE_USAGE */
-
-#ifdef CBUFFER_VALIDATE_PTRS
-	CBUF_DEBUG("%p - %p", cbuf->wp, &cbuf->data[cbuf->wp_index]);
-	if (cbuf->wp != &cbuf->data[cbuf->wp_index]) {
-		CBUF_ERR("WP: Something went wrong with write pointer");
-		CBUF_ERR("WP: Either WP is not inline with WP_Index or data ptr has corrupted");
-		return -1;
-	}
-#endif /* CBUFFER_VALIDATE_PTRS */
-
-	if (cbuf->wp == &cbuf->data[cbuf->nr_elements - 1]) {
-		CBUF_DEBUG("WP: Final element! Moving to start");
-		cbuf->wp = cbuf->data;
-#ifdef CBUFFER_VALIDATE_PTRS
-		cbuf->wp_index = 0;
-#endif /* CBUFFER_VALIDATE_PTRS */
-	} else {
-		CBUF_DEBUG("WP: Incrementing pointer");
-		cbuf->wp++;
-#ifdef CBUFFER_VALIDATE_PTRS
-		cbuf->wp_index++;
-#endif /* CBUFFER_VALIDATE_PTRS */
-	}
-
-	cbuf->current_nr_elements++;
-
-	return error;
-}
-
-int cbuffer_return_read_ptr(struct cbuffer_t *cbuf)
+int cbuffer_signal_element_read(struct cbuffer_t *cbuf)
 {
 	int error = 0;
 	if (!cbuf || !cbuf->rp) {
@@ -144,6 +98,52 @@ int cbuffer_return_read_ptr(struct cbuffer_t *cbuf)
 	}
 
 	cbuf->current_nr_elements--;
+
+	return error;
+}
+
+int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
+{
+	int error = 0;
+	if (!cbuf || !cbuf->wp) {
+		CBUF_ERR("WP: cbuffer or cbuffer->wp cannot be NULL!");
+		return -1;
+	}
+
+	_check_for_overrun(cbuf);
+
+#ifdef CBUFFER_VALIDATE_USAGE
+	if (cbuf->wp_in_use == false) {
+		CBUF_ERR("WP: No write pointer taken!");
+		return -1;
+	}
+	cbuf->wp_in_use = false;
+#endif /* CBUFFER_VALIDATE_USAGE */
+
+#ifdef CBUFFER_VALIDATE_PTRS
+	CBUF_DEBUG("%p - %p", cbuf->wp, &cbuf->data[cbuf->wp_index]);
+	if (cbuf->wp != &cbuf->data[cbuf->wp_index]) {
+		CBUF_ERR("WP: Something went wrong with write pointer");
+		CBUF_ERR("WP: Either WP is not inline with WP_Index or data ptr has corrupted");
+		return -1;
+	}
+#endif /* CBUFFER_VALIDATE_PTRS */
+
+	if (cbuf->wp == &cbuf->data[cbuf->nr_elements - 1]) {
+		CBUF_DEBUG("WP: Final element! Moving to start");
+		cbuf->wp = cbuf->data;
+#ifdef CBUFFER_VALIDATE_PTRS
+		cbuf->wp_index = 0;
+#endif /* CBUFFER_VALIDATE_PTRS */
+	} else {
+		CBUF_DEBUG("WP: Incrementing pointer");
+		cbuf->wp++;
+#ifdef CBUFFER_VALIDATE_PTRS
+		cbuf->wp_index++;
+#endif /* CBUFFER_VALIDATE_PTRS */
+	}
+
+	cbuf->current_nr_elements++;
 
 	return error;
 }

@@ -30,9 +30,9 @@ int main(int argc, char **argv)
 		struct time_trace_t *tracer = tracer_setup_time_trace();
 		for (int i = 0; i < NR_INS; i++) {
 
-			struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_ptr(cbuf);
+			struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_pointer(cbuf);
 			if (!tv) {
-				CBUF_ERR("Something went wrong, ptr == NULL!\n");
+				CBUF_ERR("Something went wrong, pointer == NULL!\n");
 				return -1;
 			}
 			tv->val = i;
@@ -41,14 +41,20 @@ int main(int argc, char **argv)
 			/* struct test_struct_t tv_corruption; */
 			/* cbuf->data = &tv_corruption; */
 
-			int error = cbuffer_return_write_ptr(cbuf);
+			int error = cbuffer_signal_element_written(cbuf);
+			if (error < 0) {
+				return -1;
+			}
 
-			tv = (struct test_struct_t *)cbuffer_get_read_ptr(cbuf, &error);
+			tv = (struct test_struct_t *)cbuffer_get_read_pointer(cbuf);
 			if (!tv) {
-				CBUF_ERR("Something went wrong, ptr == NULL!\n");
+				CBUF_ERR("Something went wrong, pointer == NULL!\n");
 				continue;
 			}
-			error = cbuffer_return_read_ptr(cbuf);
+			error = cbuffer_signal_element_read(cbuf);
+			if (error < 0) {
+				return -1;
+			}
 		}
 		tracer_time_trace_end(tracer);
 		/* CBUF_INFO("%d insertions took: %.0lfms ", NR_INS, tracer->diff); */
@@ -64,10 +70,10 @@ int main(int argc, char **argv)
 		for (int i = 0; i < NR_INS; i++) {
 
 			pthread_mutex_lock(&mtx);
-			struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_ptr(cbuf);
+			struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_pointer(cbuf);
 			pthread_mutex_unlock(&mtx);
 			if (!tv) {
-				CBUF_ERR("Something went wrong, ptr == NULL!\n");
+				CBUF_ERR("Something went wrong, pointer == NULL!\n");
 				return -1;
 			}
 			tv->val = i;
@@ -77,18 +83,24 @@ int main(int argc, char **argv)
 			/* cbuf->data = &tv_corruption; */
 
 			pthread_mutex_lock(&mtx);
-			int error = cbuffer_return_write_ptr(cbuf);
+			int error = cbuffer_signal_element_written(cbuf);
+			if (error < 0) {
+				return -1;
+			}
 			pthread_mutex_unlock(&mtx);
 
 			pthread_mutex_lock(&mtx);
-			tv = (struct test_struct_t *)cbuffer_get_read_ptr(cbuf, &error);
+			tv = (struct test_struct_t *)cbuffer_get_read_pointer(cbuf);
 			pthread_mutex_unlock(&mtx);
 			if (!tv) {
-				CBUF_ERR("Something went wrong, ptr == NULL!\n");
+				CBUF_ERR("Something went wrong, pointer == NULL!\n");
 				continue;
 			}
 			pthread_mutex_lock(&mtx);
-			error = cbuffer_return_read_ptr(cbuf);
+			error = cbuffer_signal_element_read(cbuf);
+			if (error < 0) {
+				return -1;
+			}
 			pthread_mutex_unlock(&mtx);
 		}
 		tracer_time_trace_end(tracer);
