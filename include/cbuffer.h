@@ -48,7 +48,7 @@
  */
 struct cbuffer_t {
         uint32_t nr_elements; //!< Number of elements available
-	atomic_uint current_nr_elements; //!< Current Number of elements
+	atomic_int current_nr_elements; //!< Current Number of elements
 
         void **rp; //!< Current read pointer
         void **wp; //!< Current write pointer
@@ -101,6 +101,10 @@ static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
 static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
+		if (atomic_load(&cbuf->current_nr_elements) < 0) {
+			/* Recover from previously commited crimes.. don't worry */
+			atomic_store(&cbuf->current_nr_elements, 0);
+		}
 		return atomic_load(&cbuf->current_nr_elements);
 	}
 	return -1;
@@ -214,6 +218,8 @@ int cbuffer_signal_element_read(struct cbuffer_t *cbuf);
  * @returns   -1 if failed otherwise 0
  */
 int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
+
+void cbuffer_flush(struct cbuffer_t *cbuf);
 
 /**
  * @brief  Destroy a given cbuffer

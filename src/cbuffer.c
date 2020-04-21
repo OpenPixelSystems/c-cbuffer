@@ -29,8 +29,7 @@ struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements)
 	cbuf->wp = cbuf->data;
 	cbuf->rp = cbuf->data;
 
-	/* atomic_init(&cbuf->current_nr_elements, 0); */
-	/* sem_init(&cbuf->current_nr_elements, 0, nr_elements); */
+	atomic_init(&cbuf->current_nr_elements, 0);
 
 	return cbuf;
 error:
@@ -126,6 +125,17 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
 	atomic_fetch_add(&cbuf->current_nr_elements, 1);
 
 	return error;
+}
+
+void cbuffer_flush(struct cbuffer_t *cbuf)
+{
+	cbuffer_signal_element_read(cbuf);
+	cbuffer_signal_element_written(cbuf);
+
+	atomic_store(&cbuf->current_nr_elements, 0);
+
+	cbuf->wp = cbuf->data;
+	cbuf->rp = cbuf->data;
 }
 
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf)
