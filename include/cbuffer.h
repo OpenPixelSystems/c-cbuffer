@@ -42,6 +42,9 @@
 #define CBUF_DEBUG(msg, ...) while(0) {};
 #endif
 
+/**
+ * @brief Cbuffer data structure
+ */
 struct cbuffer_t {
         uint32_t nr_elements; //!< Number of elements available
 	uint32_t current_nr_elements; //!< Current Number of elements
@@ -62,8 +65,23 @@ struct cbuffer_t {
         void **data; //!< The actual data elements
 };
 
+
+/**
+ * @brief  Initialize the cbuffer
+ *
+ * @param nr_elements Number of elements the buffer should hold
+ *
+ * @returns  NULL if failed, otherwise an allocated cbuffer
+ */
 struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements);
 
+/**
+ * @brief  Retrieve the current read pointer
+ *
+ * @param cbuf The cbuffer of which the pointer will be retrieved
+ *
+ * @returns  NULL if failed, otherwise a valid data pointer
+ */
 static inline void *cbuffer_get_read_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->rp) {
@@ -87,6 +105,13 @@ static inline void *cbuffer_get_read_pointer(struct cbuffer_t *cbuf)
 	return *cbuf->rp;
 }
 
+/**
+ * @brief  Retrieve the current write pointer
+ *
+ * @param cbuf The cbuffer of which the pointer will be retrieved
+ *
+ * @returns  NULL if failed, otherwise a valid data pointer
+ */
 static inline void *cbuffer_get_write_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->wp) {
@@ -105,6 +130,13 @@ static inline void *cbuffer_get_write_pointer(struct cbuffer_t *cbuf)
 	return *cbuf->wp;
 }
 
+/**
+ * @brief  Retrieve the current raw read pointer
+ *
+ * @param cbuf The cbuffer of which the pointer will be retrieved
+ *
+ * @returns  NULL if failed, otherwise a valid pointer to the data pointer
+ */
 static inline void **cbuffer_get_raw_read_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->rp) {
@@ -115,6 +147,13 @@ static inline void **cbuffer_get_raw_read_pointer(struct cbuffer_t *cbuf)
 	return cbuf->rp;
 }
 
+/**
+ * @brief  Retrieve the current raw write pointer
+ *
+ * @param cbuf The cbuffer of which the pointer will be retrieved
+ *
+ * @returns  NULL if failed, otherwise a valid pointer to the data pointer
+ */
 static inline void **cbuffer_get_raw_write_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->wp) {
@@ -125,10 +164,32 @@ static inline void **cbuffer_get_raw_write_pointer(struct cbuffer_t *cbuf)
 }
 
 
+/**
+ * @brief  Signal that an element was read
+ *
+ * @param cbuf The cbuffer to which we signal this
+ *
+ * @returns   -1 if failed otherwise 0
+ */
 int cbuffer_signal_element_read(struct cbuffer_t *cbuf);
 
+
+/**
+ * @brief  Signal that an element was written
+ *
+ * @param cbuf The cbuffer to which we signal this
+ *
+ * @returns   -1 if failed otherwise 0
+ */
 int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
 
+/**
+ * @brief  Retrieve the cbuffer size
+ *
+ * @param cbuf Cbuffer of which we retrieve the size
+ *
+ * @returns  The size or -1 if failed
+ */
 static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
@@ -137,6 +198,13 @@ static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
 	return -1;
 }
 
+/**
+ * @brief  Retrieve the cbuffer count
+ *
+ * @param cbuf Cbuffer of which we retrieve the count
+ *
+ * @returns  The size or -1 if failed
+ */
 static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
@@ -145,6 +213,11 @@ static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
 	return -1;
 }
 
+/**
+ * @brief  Destroy a given cbuffer
+ *
+ * @param cbuf The cbuffer that will be cleaned
+ */
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf);
 
 #define CBUFFER_ALLOCATOR_HELPER(cbuf, type) \
