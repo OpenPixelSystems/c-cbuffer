@@ -13,6 +13,29 @@ struct test_struct_t {
 	int val;
 };
 
+void *consumer_thread(void *data)
+{
+	struct cbuffer_t *cbuf = (struct cbuffer_t*)data;
+	if (!cbuf) {
+		CBUF_ERR("No cbuf found!");
+		return NULL;
+	}
+
+	for (int i = 0;;) {
+		struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_read_pointer(cbuf);
+		if (!tv) {
+			continue;
+		}
+
+		if (tv->val != i) {
+			CBUF_ERR("Missing an element %d - %d", tv->val, i);
+			exit(-1);
+		}
+		cbuffer_signal_element_read(cbuf);
+		i++;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	struct cbuffer_t *cbuf = cbuffer_init_cbuffer(10);
@@ -23,8 +46,9 @@ int main(int argc, char **argv)
 
 	double avg = 0.0;
 
-#define NR_RUNS 10000
-#define NR_INS 10000
+#define NR_RUNS 1
+#define NR_INS 1
+	CBUF_INFO("Stage 1");
 	/* NONE Protected run */
 	for (int runs = 0; runs < NR_RUNS; runs++) {
 		struct time_trace_t *tracer = tracer_setup_time_trace();
@@ -62,52 +86,26 @@ int main(int argc, char **argv)
 		tracer_time_trace_free(tracer);
 	}
 	CBUF_INFO("%d insertions took: %.0lfms average over %d runs", NR_INS, avg / NR_RUNS, NR_RUNS);
+	cbuffer_destroy_cbuffer(cbuf);
 
-	avg = 0.0;
-	/* NONE Protected run */
-	for (int runs = 0; runs < NR_RUNS; runs++) {
-		struct time_trace_t *tracer = tracer_setup_time_trace();
-		for (int i = 0; i < NR_INS; i++) {
+	CBUF_INFO("Stage 2");
+	cbuf = cbuffer_init_cbuffer(3);
 
-			pthread_mutex_lock(&mtx);
-			struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_pointer(cbuf);
-			pthread_mutex_unlock(&mtx);
-			if (!tv) {
-				CBUF_ERR("Something went wrong, pointer == NULL!\n");
-				return -1;
-			}
-			tv->val = i;
+	pthread_t consumer;
+	pthread_create(&consumer, NULL, consumer_thread, (void*)cbuf);
 
-			/* Simulate data corruption */
-			/* struct test_struct_t tv_corruption; */
-			/* cbuf->data = &tv_corruption; */
+	CBUFFER_ALLOCATOR_HELPER(cbuf, struct test_struct_t);
 
-			pthread_mutex_lock(&mtx);
-			int error = cbuffer_signal_element_written(cbuf);
-			if (error < 0) {
-				return -1;
-			}
-			pthread_mutex_unlock(&mtx);
-
-			pthread_mutex_lock(&mtx);
-			tv = (struct test_struct_t *)cbuffer_get_read_pointer(cbuf);
-			pthread_mutex_unlock(&mtx);
-			if (!tv) {
-				CBUF_ERR("Something went wrong, pointer == NULL!\n");
-				continue;
-			}
-			pthread_mutex_lock(&mtx);
-			error = cbuffer_signal_element_read(cbuf);
-			if (error < 0) {
-				return -1;
-			}
-			pthread_mutex_unlock(&mtx);
+	for (int i = 0;;) {
+		struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_pointer(cbuf);
+		if (!tv) {
+			continue;
 		}
-		tracer_time_trace_end(tracer);
-		/* CBUF_INFO("%d insertions took: %.0lfms ", NR_INS, tracer->diff); */
-		avg += tracer->diff;
-		tracer_time_trace_free(tracer);
+		tv->val = i;
+		cbuffer_signal_element_written(cbuf);
+		i++;
 	}
-	CBUF_INFO("%d insertions with mutex took: %.0lfms average over %d runs", NR_INS, avg / NR_RUNS, NR_RUNS);
+	pthread_join(consumer, NULL);
+
 	return 0;
 }

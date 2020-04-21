@@ -21,6 +21,7 @@
 #include <string.h>
 #include <malloc.h>
 
+#include <stdatomic.h>
 #include <stdio.h>
 
 /* #define CBUFFER_DEBUG_OUTPUT */
@@ -47,19 +48,19 @@
  */
 struct cbuffer_t {
         uint32_t nr_elements; //!< Number of elements available
-	uint32_t current_nr_elements; //!< Current Number of elements
+	atomic_uint current_nr_elements; //!< Current Number of elements
 
         void **rp; //!< Current read pointer
         void **wp; //!< Current write pointer
 
 #ifdef CBUFFER_VALIDATE_USAGE
-	bool wp_in_use; //!< Is a write pointer in use?
-	bool rp_in_use; //!< Is a read pointer in use?
+	bool rp_in_use; //!< Is a write pointer in use?
+	bool wp_in_use; //!< Is a read pointer in use?
 #endif /* CBUFFER_VALIDATE_USAGE */
 
 #ifdef CBUFFER_VALIDATE_PTRS
-	uint8_t wp_index; //!< Current wp index in data
-	uint8_t rp_index; //!< Current rp index in data
+	uint8_t rp_index; //!< Current wp index in data
+	uint8_t wp_index; //!< Current rp index in data
 #endif /* CBUFFER_VALIDATE_PTRS */
 
         void **data; //!< The actual data elements
@@ -76,6 +77,36 @@ struct cbuffer_t {
 struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements);
 
 /**
+ * @brief  Retrieve the cbuffer size
+ *
+ * @param cbuf Cbuffer of which we retrieve the size
+ *
+ * @returns  The size or -1 if failed
+ */
+static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
+{
+	if (cbuf) {
+		return cbuf->nr_elements;
+	}
+	return -1;
+}
+
+/**
+ * @brief  Retrieve the cbuffer count
+ *
+ * @param cbuf Cbuffer of which we retrieve the count
+ *
+ * @returns  The size or -1 if failed
+ */
+static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
+{
+	if (cbuf) {
+		return atomic_load(&cbuf->current_nr_elements);
+	}
+	return -1;
+}
+
+/**
  * @brief  Retrieve the current read pointer
  *
  * @param cbuf The cbuffer of which the pointer will be retrieved
@@ -88,9 +119,8 @@ static inline void *cbuffer_get_read_pointer(struct cbuffer_t *cbuf)
 		CBUF_ERR("Invalid argument, cbuf || cbuf->rp == NULL");
 		return NULL;
 	}
-	//TODO: Differentiate between NULLptr and empty
-	if (!cbuf->current_nr_elements) {
-		CBUF_DEBUG("Cbuffer is empty");
+
+	if (!cbuffer_get_count(cbuf)) {
 		return NULL;
 	}
 
@@ -116,6 +146,10 @@ static inline void *cbuffer_get_write_pointer(struct cbuffer_t *cbuf)
 {
 	if (!cbuf || !cbuf->wp) {
 		CBUF_ERR("Invalid argument, cbuf || cbuf->wp == NULL");
+		return NULL;
+	}
+
+	if (cbuffer_get_count(cbuf) == cbuf->nr_elements) {
 		return NULL;
 	}
 
@@ -163,7 +197,6 @@ static inline void **cbuffer_get_raw_write_pointer(struct cbuffer_t *cbuf)
 	return cbuf->wp;
 }
 
-
 /**
  * @brief  Signal that an element was read
  *
@@ -172,7 +205,6 @@ static inline void **cbuffer_get_raw_write_pointer(struct cbuffer_t *cbuf)
  * @returns   -1 if failed otherwise 0
  */
 int cbuffer_signal_element_read(struct cbuffer_t *cbuf);
-
 
 /**
  * @brief  Signal that an element was written
@@ -184,36 +216,6 @@ int cbuffer_signal_element_read(struct cbuffer_t *cbuf);
 int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
 
 /**
- * @brief  Retrieve the cbuffer size
- *
- * @param cbuf Cbuffer of which we retrieve the size
- *
- * @returns  The size or -1 if failed
- */
-static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
-{
-	if (cbuf) {
-		return cbuf->nr_elements;
-	}
-	return -1;
-}
-
-/**
- * @brief  Retrieve the cbuffer count
- *
- * @param cbuf Cbuffer of which we retrieve the count
- *
- * @returns  The size or -1 if failed
- */
-static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
-{
-	if (cbuf) {
-		return cbuf->current_nr_elements;
-	}
-	return -1;
-}
-
-/**
  * @brief  Destroy a given cbuffer
  *
  * @param cbuf The cbuffer that will be cleaned
@@ -223,4 +225,12 @@ void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf);
 #define CBUFFER_ALLOCATOR_HELPER(cbuf, type) \
 	for (int i = 0; i < (cbuf)->nr_elements; i++) { \
 		(cbuf)->data[i] = malloc(sizeof(type)); \
+		memset((cbuf)->data[i], 0, sizeof(type)); \
+	}
+
+#define CBUFFER_DEALLOCATOR_HELPER(cbuf) \
+	for (int i = 0; i < (cbuf)->nr_elements; i++) { \
+		if ((cbuf)->data[i]) { \
+			free((cbuf)->data[i]);\
+		}\
 	}

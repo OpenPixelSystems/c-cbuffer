@@ -1,24 +1,5 @@
 #include "cbuffer.h"
 
-static inline int _check_for_underrun(struct cbuffer_t *cbuf) {
-	if (cbuf->rp == cbuf->wp) {
-		CBUF_ERR("Underrun detected!!");
-		return -1;
-	}
-	return 1; // You're good!
-}
-
-static inline int _check_for_overrun(struct cbuffer_t *cbuf) {
-	if (cbuf->current_nr_elements == 0) {
-		return 0;
-	}
-	if (cbuf->wp == cbuf->rp) {
-		CBUF_ERR("Overrun detected!!");
-		return -1;
-	}
-	return 1; // You're good!
-}
-
 static inline int _allocate_internal_buffers(struct cbuffer_t *cbuf)
 {
 	cbuf->data = malloc(cbuf->nr_elements * sizeof(void *));
@@ -48,6 +29,9 @@ struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements)
 	cbuf->wp = cbuf->data;
 	cbuf->rp = cbuf->data;
 
+	/* atomic_init(&cbuf->current_nr_elements, 0); */
+	/* sem_init(&cbuf->current_nr_elements, 0, nr_elements); */
+
 	return cbuf;
 error:
 	if (cbuf) {
@@ -63,8 +47,6 @@ int cbuffer_signal_element_read(struct cbuffer_t *cbuf)
 		CBUF_ERR("RP: cbuffer or cbuffer->wp cannot be NULL!");
 		return -1;
 	}
-
-	_check_for_underrun(cbuf);
 
 #ifdef CBUFFER_VALIDATE_USAGE
 	if (cbuf->rp_in_use == false) {
@@ -97,7 +79,7 @@ int cbuffer_signal_element_read(struct cbuffer_t *cbuf)
 #endif /* CBUFFER_VALIDATE_PTRS */
 	}
 
-	cbuf->current_nr_elements--;
+	atomic_fetch_sub(&cbuf->current_nr_elements, 1);
 
 	return error;
 }
@@ -109,8 +91,6 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
 		CBUF_ERR("WP: cbuffer or cbuffer->wp cannot be NULL!");
 		return -1;
 	}
-
-	_check_for_overrun(cbuf);
 
 #ifdef CBUFFER_VALIDATE_USAGE
 	if (cbuf->wp_in_use == false) {
@@ -143,7 +123,18 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
 #endif /* CBUFFER_VALIDATE_PTRS */
 	}
 
-	cbuf->current_nr_elements++;
+	atomic_fetch_add(&cbuf->current_nr_elements, 1);
 
 	return error;
+}
+
+void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf)
+{
+	if (cbuf) {
+		if (cbuf->data) {
+			CBUFFER_DEALLOCATOR_HELPER(cbuf);
+		}
+		free(cbuf->data);
+		free(cbuf);
+	}
 }
