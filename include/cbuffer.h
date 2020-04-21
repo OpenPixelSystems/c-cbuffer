@@ -1,10 +1,19 @@
 /**
  * @file cbuffer.h
  * @brief Header file for Circular buffer implementation
- * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
- * @author Laurens Miers <laurens.miers@mind.be>
- * @version v2.0
+ * @author Bram Vlerick <bram.vlerick@openpixelsystems.org> (v1.0, v2.1)
+ * @author Laurens Miers <laurens.miers@mind.be> (v2.0)
+ * @version v2.1
  * @date 2020-04-20
+ */
+
+/**
+ * Notable changes with v2.0:
+ * - Write / Read pointer validity no longer depends on current_nr_elements.
+ *   While current_nr_elements is still susceptive to race-conditions it no longer
+ *   impacts the read/write pointers
+ * - Check pointer validity and wp/rp usages (check that no new pointer can be
+ *   taken when the previous one has not been signaled as read or written)
  */
 
 #include <stdint.h>
@@ -34,23 +43,23 @@
 #endif
 
 struct cbuffer_t {
-        uint32_t nr_elements;
-	uint32_t current_nr_elements;
+        uint32_t nr_elements; //!< Number of elements available
+	uint32_t current_nr_elements; //!< Current Number of elements
 
-        void **rp;
-        void **wp;
+        void **rp; //!< Current read pointer
+        void **wp; //!< Current write pointer
 
 #ifdef CBUFFER_VALIDATE_USAGE
-	bool wp_in_use;
-	bool rp_in_use;
+	bool wp_in_use; //!< Is a write pointer in use?
+	bool rp_in_use; //!< Is a read pointer in use?
 #endif /* CBUFFER_VALIDATE_USAGE */
 
 #ifdef CBUFFER_VALIDATE_PTRS
-	uint8_t wp_index;
-	uint8_t rp_index;
+	uint8_t wp_index; //!< Current wp index in data
+	uint8_t rp_index; //!< Current rp index in data
 #endif /* CBUFFER_VALIDATE_PTRS */
 
-        void **data;
+        void **data; //!< The actual data elements
 };
 
 struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements);

@@ -55,3 +55,5 @@ dkms.conf
 # Vim files
 *.swp
 tags
+.clangd
+compile_commands.json
