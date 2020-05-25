@@ -16,17 +16,20 @@
  *   taken when the previous one has not been signaled as read or written)
  */
 
+#ifndef _CBUFFER_H_
+#define _CBUFFER_H_
+
+
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <malloc.h>
-
 #include <stdatomic.h>
-#include <stdio.h>
 
 /* #define CBUFFER_DEBUG_OUTPUT */
-#define CBUFFER_VALIDATE_PTRS
-#define CBUFFER_VALIDATE_USAGE
+/* #define CBUFFER_VALIDATE_PTRS */
+/* #define CBUFFER_VALIDATE_USAGE */
 
 #define CBUF_INFO(msg, ...) \
 	printf("(INFO) %s: %s: (%d) " msg "\n", __FILE__, __FUNCTION__, __LINE__,      \
@@ -40,30 +43,30 @@
 #define CBUF_DEBUG(msg, ...) \
 	printf("(DEBUG) " msg "\n", ## __VA_ARGS__)
 #else
-#define CBUF_DEBUG(msg, ...) while(0) {};
+#define CBUF_DEBUG(msg, ...) while (0) {};
 #endif
 
 /**
  * @brief Cbuffer data structure
  */
 struct cbuffer_t {
-        uint32_t nr_elements; //!< Number of elements available
-	atomic_int current_nr_elements; //!< Current Number of elements
+	uint32_t	nr_elements;            //!< Number of elements available
+	atomic_int	current_nr_elements;    //!< Current Number of elements
 
-        void **rp; //!< Current read pointer
-        void **wp; //!< Current write pointer
+	void **		rp;                     //!< Current read pointer
+	void **		wp;                     //!< Current write pointer
 
 #ifdef CBUFFER_VALIDATE_USAGE
-	bool rp_in_use; //!< Is a write pointer in use?
-	bool wp_in_use; //!< Is a read pointer in use?
+	bool		rp_in_use;      //!< Is a write pointer in use?
+	bool		wp_in_use;      //!< Is a read pointer in use?
 #endif /* CBUFFER_VALIDATE_USAGE */
 
 #ifdef CBUFFER_VALIDATE_PTRS
-	uint8_t rp_index; //!< Current wp index in data
-	uint8_t wp_index; //!< Current rp index in data
+	uint8_t		rp_index;       //!< Current wp index in data
+	uint8_t		wp_index;       //!< Current rp index in data
 #endif /* CBUFFER_VALIDATE_PTRS */
 
-        void **data; //!< The actual data elements
+	void **		data; //!< The actual data elements
 };
 
 
@@ -221,6 +224,34 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
 
 void cbuffer_flush(struct cbuffer_t *cbuf);
 
+static inline int cbuffer_set_element(struct cbuffer_t *cbuf, size_t index, void *element)
+{
+	if (!cbuf) {
+		return -1;
+	}
+
+	if (index >= cbuf->nr_elements) {
+		/* index out of range */
+		return -1;
+	}
+
+	cbuf->data[index] = element;
+	return 0;
+}
+
+static inline void *cbuffer_get_element(struct cbuffer_t *cbuf, size_t index)
+{
+	if (!cbuf) {
+		return NULL;
+	}
+	if (index >= cbuf->nr_elements) {
+		/* index out of range */
+		return NULL;
+	}
+
+	return cbuf->data[index];
+}
+
 /**
  * @brief  Destroy a given cbuffer
  *
@@ -228,15 +259,20 @@ void cbuffer_flush(struct cbuffer_t *cbuf);
  */
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf);
 
+#define cbuffer_init(x) cbuffer_init_cbuffer(x)
+#define cbuffer_flush_all(x) cbuffer_flush(x)
+#define cbuffer_destroy(x) cbuffer_destroy_cbuffer(x)
+
 #define CBUFFER_ALLOCATOR_HELPER(cbuf, type) \
-	for (int i = 0; i < (cbuf)->nr_elements; i++) { \
-		(cbuf)->data[i] = malloc(sizeof(type)); \
-		memset((cbuf)->data[i], 0, sizeof(type)); \
+	for (int iter = 0; iter < (cbuf)->nr_elements; iter++) { \
+		(cbuf)->data[iter] = malloc(sizeof(type)); \
+		memset((cbuf)->data[iter], 0, sizeof(type)); \
 	}
 
 #define CBUFFER_DEALLOCATOR_HELPER(cbuf) \
-	for (int i = 0; i < (cbuf)->nr_elements; i++) { \
-		if ((cbuf)->data[i]) { \
-			free((cbuf)->data[i]);\
-		}\
+	for (int iter = 0; iter < (cbuf)->nr_elements; iter++) { \
+		if ((cbuf)->data[iter]) { \
+			free((cbuf)->data[iter]); \
+		} \
 	}
+#endif /* _CBUFFER_H_ */

@@ -1,3 +1,12 @@
+/**
+ * @file util-cbuffer.c
+ * @brief Header file for Circular buffer implementation
+ * @author Bram Vlerick <bram.vlerick@openpixelsystems.org> (v1.0, v2.1)
+ * @author Laurens Miers <laurens.miers@mind.be> (v2.0)
+ * @version v2.1
+ * @date 2020-04-20
+ */
+
 #include "cbuffer.h"
 
 static inline int _allocate_internal_buffers(struct cbuffer_t *cbuf)
@@ -12,7 +21,8 @@ static inline int _allocate_internal_buffers(struct cbuffer_t *cbuf)
 
 struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements)
 {
-	struct cbuffer_t  *cbuf = NULL;
+	struct cbuffer_t *cbuf = NULL;
+
 	cbuf = malloc(sizeof(struct cbuffer_t));
 	if (!cbuf) {
 		CBUF_ERR("Failed to allocate the cbuffer");
@@ -42,6 +52,7 @@ error:
 int cbuffer_signal_element_read(struct cbuffer_t *cbuf)
 {
 	int error = 0;
+
 	if (!cbuf || !cbuf->rp) {
 		CBUF_ERR("RP: cbuffer or cbuffer->wp cannot be NULL!");
 		return -1;
@@ -86,6 +97,7 @@ int cbuffer_signal_element_read(struct cbuffer_t *cbuf)
 int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
 {
 	int error = 0;
+
 	if (!cbuf || !cbuf->wp) {
 		CBUF_ERR("WP: cbuffer or cbuffer->wp cannot be NULL!");
 		return -1;
@@ -129,6 +141,10 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf)
 
 void cbuffer_flush(struct cbuffer_t *cbuf)
 {
+	if (!cbuf) {
+		return;
+	}
+
 	cbuffer_signal_element_read(cbuf);
 	cbuffer_signal_element_written(cbuf);
 
@@ -141,9 +157,10 @@ void cbuffer_flush(struct cbuffer_t *cbuf)
 void cbuffer_destroy_cbuffer(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
-		if (cbuf->data) {
-			CBUFFER_DEALLOCATOR_HELPER(cbuf);
-		}
+		/* TODO: Fix this, this is needed when memory is allocated internally */
+		/* if (cbuf->data) { */
+		/* CBUFFER_DEALLOCATOR_HELPER(cbuf); */
+		/* } */
 		free(cbuf->data);
 		free(cbuf);
 	}
