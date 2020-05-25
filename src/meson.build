@@ -1,4 +1,4 @@
-cbuffersrc = ['cbuffer.c']
+cbuffersrc = [files('cbuffer.c')]
 thread_dep = dependency('threads')
 
 cbufferlib = shared_library(
