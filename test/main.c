@@ -21,7 +21,7 @@ void *consumer_thread(void *data)
 		return NULL;
 	}
 
-	for (int i = 0;;) {
+	for (int i = 0; i < 1000000;) {
 		struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_read_pointer(cbuf);
 		if (!tv) {
 			continue;
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
 	CBUFFER_ALLOCATOR_HELPER(cbuf, struct test_struct_t);
 
-	for (int i = 0;;) {
+	for (int i = 0; i < 1000000;) {
 		struct test_struct_t *tv = (struct test_struct_t *)cbuffer_get_write_pointer(cbuf);
 		if (!tv) {
 			continue;
