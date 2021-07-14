@@ -1,9 +1,6 @@
 project('cbuffer','c')
-inc = include_directories('include')
 
-add_project_arguments([
-  '-I' + meson.build_root(),
-], language: 'c')
+cbuff_includes = include_directories('include')
 
 subdir('src')
 subdir('test')
