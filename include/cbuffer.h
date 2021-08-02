@@ -86,12 +86,12 @@ struct cbuffer_t *cbuffer_init_cbuffer(int nr_elements);
  *
  * @returns  The size or -1 if failed
  */
-static inline int cbuffer_get_size(struct cbuffer_t *cbuf)
+static inline uint32_t cbuffer_get_size(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
 		return cbuf->nr_elements;
 	}
-	return -1;
+	return 0;
 }
 
 /**
