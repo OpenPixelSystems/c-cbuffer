@@ -101,7 +101,7 @@ static inline uint32_t cbuffer_get_size(struct cbuffer_t *cbuf)
  *
  * @returns  The size or -1 if failed
  */
-static inline int cbuffer_get_count(struct cbuffer_t *cbuf)
+static inline uint32_t cbuffer_get_count(struct cbuffer_t *cbuf)
 {
 	if (cbuf) {
 		if (atomic_load(&cbuf->current_nr_elements) < 0) {
