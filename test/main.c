@@ -34,6 +34,7 @@ void *consumer_thread(void *data)
 		cbuffer_signal_element_read(cbuf);
 		i++;
 	}
+	return NULL;
 }
 
 int main(int argc, char **argv)
